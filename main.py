@@ -9,15 +9,44 @@ YELLOW = "#f7f5dd"
 FONT_NAME = "Courier"
 WORK_MIN = 25
 SHORT_BREAK_MIN = 5
-LONG_BREAK_MIN = 20
+LONG_BREAK_MIN = 15
+reps = 0
+timer = None
 
-# ---------------------------- TIMER RESET ------------------------------- # 
+
+# ---------------------------- TIMER RESET ------------------------------- #
+def reset_timer():
+    window.after_cancel(timer)
+    canvas.itemconfig(timer_text, text="00:00")
+    label.config(text="TIMER", fg=GREEN)
+    marks['text'] = ""
+    global reps
+    reps = 0
+
 
 # ---------------------------- TIMER MECHANISM ------------------------------- # 
 def start_timer():
-    count_down(5 * 60)
+    global reps
+    reps += 1
 
-# ---------------------------- COUNTDOWN MECHANISM ------------------------------- # 
+    work_min_sec = WORK_MIN * 60
+    short_break_sec = SHORT_BREAK_MIN * 60
+    long_break_sec = LONG_BREAK_MIN * 60
+
+    if reps % 8 == 0:
+        label.config(text="BREAK", fg=RED)
+        count_down(long_break_sec)
+    elif reps % 2 == 0:
+        label.config(text="BREAK", fg=PINK)
+        count_down(short_break_sec)
+    elif reps == 9:
+        reset_timer()
+    else:
+        label.config(text="WORK", fg=GREEN)
+        count_down(work_min_sec)
+
+
+# ---------------------------- COUNTDOWN MECHANISM ------------------------------- #
 def count_down(count):
     count_min = math.floor(count / 60)
     count_sec = count % 60
@@ -27,7 +56,17 @@ def count_down(count):
 
     canvas.itemconfig(timer_text, text=f"{count_min}:{count_sec}")
     if count > 0:
-        window.after(1000, count_down, count - 1)
+        global timer
+        timer = window.after(1000, count_down, count - 1)
+    else:
+        start_timer()
+        mark = ""
+        work_sessions = math.floor(reps / 2)
+        for _ in range(work_sessions):
+            mark += "✓"
+        marks.config(text=mark)
+
+
 # ---------------------------- UI SETUP ------------------------------- #
 window = Tk()
 window.title("Pomodoro")
@@ -45,10 +84,10 @@ canvas.grid(row=1, column=1)
 start = Button(text="Start", highlightthickness=0, command=start_timer)
 start.grid(row=2, column=0)
 
-reset = Button(text="Reset", highlightthickness=0)
+reset = Button(text="Reset", highlightthickness=0, command=reset_timer)
 reset.grid(row=2, column=2)
 
-marks = Label(text="✔", fg=GREEN, bg=YELLOW)
+marks = Label(fg=GREEN, bg=YELLOW)
 marks.grid(row=3, column=1)
 
 window.mainloop()
